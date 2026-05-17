@@ -434,7 +434,7 @@ def color_sharpe(val):
     return ""
 
 st.dataframe(
-    risk_df.style.applymap(color_sharpe, subset=["Sharpe", "Sortino"]),
+    risk_df.style.map(color_sharpe, subset=["Sharpe", "Sortino"]),
     use_container_width=True, hide_index=True
 )
 
