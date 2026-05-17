@@ -486,7 +486,82 @@ st.divider()
 
 
 # ════════════════════════════════════════════════════════════
-# SECTION 8: DAILY BRIEFING (JASON MODE)
+# SECTION 8: AI ANALISA (GROQ)
+# ════════════════════════════════════════════════════════════
+st.markdown("## 🤖 AI Analisa — Jason Mode")
+st.caption("Dibaca otomatis dari semua data di atas — dalam Bahasa Indonesia")
+
+def get_groq_analysis(composites, bw_regime, gs_bull_bear, risk_report):
+    try:
+        import requests, os
+        key = st.secrets.get("GROQ_API_KEY", os.environ.get("GROQ_API_KEY", ""))
+        if not key:
+            return "⚠️ GROQ_API_KEY belum diset di Streamlit Secrets."
+
+        top    = composites[0]
+        bottom = composites[-1]
+        regime = bw_regime.get("regime_label", "Unknown")
+        bb     = gs_bull_bear.get("gs_bull_bear", 50)
+        bb_lbl = gs_bull_bear.get("label", "NEUTRAL")
+
+        ranking_text = "\n".join([
+            f"#{c['rank']} {c['ticker']}: {c['composite_score']}/10 ({c['signal']})"
+            for c in composites
+        ])
+
+        risk_text = "\n".join([
+            f"{t}: Sharpe={risk_report.get(t,{}).get('sharpe',0):.2f}, MaxDD={risk_report.get(t,{}).get('max_drawdown',0):.1f}%"
+            for t in [c['ticker'] for c in composites]
+        ])
+
+        prompt = f"""Kamu adalah analis investasi pribadi Jason — mahasiswa di Beijing yang invest jangka panjang (10-20 tahun).
+
+DATA HARI INI:
+- Regime pasar: {regime}
+- Goldman Sachs Bull/Bear: {bb:.0f}/100 ({bb_lbl})
+- Ranking saham:
+{ranking_text}
+- Risk metrics:
+{risk_text}
+
+Tulis analisa dalam Bahasa Indonesia informal (seperti ngobrol dengan teman yang paham investasi). Format:
+1. Kondisi pasar hari ini (1 kalimat)
+2. Saham terkuat & terlemah + kenapa (2-3 kalimat)
+3. 1 langkah konkret yang harus Jason ambil hari ini
+
+Maksimal 5 kalimat total. Langsung ke poin, tidak ada basa-basi."""
+
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json={
+                "model": "llama3-8b-8192",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 300,
+                "temperature": 0.7,
+            },
+            timeout=15
+        )
+        data = response.json()
+        return data["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"⚠️ Error: {str(e)}"
+
+if st.button("🔍 Generate AI Analisa Sekarang", use_container_width=True):
+    with st.spinner("AI sedang baca semua data..."):
+        analisa = get_groq_analysis(composites, bw_regime, gs_bull_bear, risk_report)
+    st.markdown(
+        f"<div style='background:var(--color-background-secondary); border-radius:8px; "
+        f"padding:16px; border-left:3px solid #7c3aed; font-size:15px; line-height:1.7;'>"
+        f"{analisa}</div>",
+        unsafe_allow_html=True
+    )
+
+st.divider()
+
+
+# ════════════════════════════════════════════════════════════
+# SECTION 9: DAILY BRIEFING (JASON MODE)
 # ════════════════════════════════════════════════════════════
 st.markdown("## 📋 Daily Briefing")
 summary = generate_jason_summary(composites, bw_regime, gs_bull_bear)
