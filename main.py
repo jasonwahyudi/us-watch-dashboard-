@@ -543,6 +543,8 @@ Maksimal 5 kalimat total. Langsung ke poin, tidak ada basa-basi."""
             timeout=15
         )
         data = response.json()
+        if "choices" not in data:
+            return f"⚠️ Groq error: {data.get('error', {}).get('message', str(data))}"
         return data["choices"][0]["message"]["content"]
     except Exception as e:
         return f"⚠️ Error: {str(e)}"
