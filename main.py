@@ -460,8 +460,12 @@ st.divider()
 # ════════════════════════════════════════════════════════════
 st.markdown("## 📈 Price History (Normalized to 100)")
 
-norm = prices_df[EQUITY_TICKERS + [BENCHMARK]].dropna()
-norm = norm / norm.iloc[0] * 100
+avail_tickers = [t for t in EQUITY_TICKERS + [BENCHMARK] if t in prices_df.columns]
+norm = prices_df[avail_tickers].dropna(how="all")
+norm = norm.dropna()
+if not norm.empty and len(norm) > 1:
+    first_row = norm.iloc[0].replace(0, float('nan'))
+    norm = norm / first_row * 100
 
 palette = {"NVDA":"#76b900","AVGO":"#cc0000","MSFT":"#00a4ef","CEG":"#ffa500","SPY":"#888888"}
 fig_px = go.Figure()
